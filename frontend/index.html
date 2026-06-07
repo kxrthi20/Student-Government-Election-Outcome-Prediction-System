@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CART Election Prediction System</title>
+  <meta name="description" content="AI-powered student government election outcome prediction using CART Decision Tree algorithm." />
+  <link rel="stylesheet" href="./css/styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗳️</text></svg>" />
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     LOADING OVERLAY
+════════════════════════════════════════════════════════════ -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="spinner"></div>
+  <p>Processing…</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TOAST CONTAINER
+════════════════════════════════════════════════════════════ -->
+<div id="toast-container"></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     AUTH PAGE
+════════════════════════════════════════════════════════════ -->
+<div id="auth-page">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="logo-icon">🗳️</div>
+      <h1>CART Election<br>Prediction System</h1>
+      <p>Student Government · AI-Powered · Decision Tree</p>
+    </div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login">Sign In</button>
+      <button class="auth-tab" id="tab-signup">Sign Up</button>
+    </div>
+
+    <div id="auth-error" class="auth-error"></div>
+
+    <!-- Login Form -->
+    <form id="login-form">
+      <div class="form-group">
+        <label for="login-username">Username <span class="required">*</span></label>
+        <div class="input-wrap">
+          <input class="form-control" type="text" id="login-username"
+            placeholder="Enter username" autocomplete="username" />
+          <span class="input-icon">👤</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="login-password">Password <span class="required">*</span></label>
+        <div class="input-wrap">
+          <input class="form-control" type="password" id="login-password"
+            placeholder="Enter password" autocomplete="current-password" />
+          <span class="input-icon">🔒</span>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block btn-lg">Sign In</button>
+      <p class="auth-hint">Default admin: <span>admin</span> / <span>admin123</span></p>
+    </form>
+
+    <!-- Signup Form -->
+    <form id="signup-form" style="display:none">
+      <div class="form-group">
+        <label for="signup-username">Username <span class="required">*</span></label>
+        <div class="input-wrap">
+          <input class="form-control" type="text" id="signup-username"
+            placeholder="Choose a username" autocomplete="username" />
+          <span class="input-icon">👤</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="signup-password">Password <span class="required">*</span></label>
+        <div class="input-wrap">
+          <input class="form-control" type="password" id="signup-password"
+            placeholder="Min. 6 characters" autocomplete="new-password" />
+          <span class="input-icon">🔒</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="signup-confirm">Confirm Password <span class="required">*</span></label>
+        <div class="input-wrap">
+          <input class="form-control" type="password" id="signup-confirm"
+            placeholder="Repeat password" autocomplete="new-password" />
+          <span class="input-icon">🔑</span>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block btn-lg">Create Account</button>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     APP SHELL
+════════════════════════════════════════════════════════════ -->
+<div id="app-shell" style="display:none; flex-direction:row;">
+
+  <!-- ── Sidebar ─────────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <div class="logo-box">🗳️</div>
+        <div class="brand">
+          CART Election<br>
+          <span>Prediction System</span>
+        </div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a class="nav-item active" data-page="dashboard">
+        <span class="nav-icon">🏠</span> Dashboard
+      </a>
+      <a class="nav-item" data-page="predict">
+        <span class="nav-icon">🔮</span> New Prediction
+      </a>
+      <a class="nav-item" data-page="results">
+        <span class="nav-icon">📊</span> Results
+      </a>
+
+      <div class="nav-section-label" style="margin-top:12px">Analytics</div>
+      <a class="nav-item" data-page="insights">
+        <span class="nav-icon">🧠</span> Model Insights
+      </a>
+      <a class="nav-item" data-page="data">
+        <span class="nav-icon">📁</span> Dataset
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="user-avatar" id="nav-avatar">A</div>
+        <div class="user-info">
+          <div class="user-name" id="nav-username">admin</div>
+          <div class="user-role" id="nav-role">admin</div>
+        </div>
+        <button class="btn-logout" id="btn-logout" title="Logout">⏻</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Topbar ──────────────────────────────────────────── -->
+  <header class="topbar">
+    <div class="topbar-title" id="topbar-title">Dashboard
+      <span>Logged in as <strong id="topbar-username">admin</strong></span>
+    </div>
+    <div id="model-status-pill" class="status-pill not-trained">
+      <span class="status-dot"></span> Not Trained
+    </div>
+  </header>
+
+  <!-- ── Main Content ────────────────────────────────────── -->
+  <main class="main-content">
+
+    <!-- ══════════════════════════════════════
+         PAGE: Dashboard
+    ═══════════════════════════════════════ -->
+    <section id="page-dashboard" class="page active">
+      <div class="page-header">
+        <h2>Election Prediction Dashboard</h2>
+        <p>CART (Decision Tree) · Random Forest · Model Evaluation</p>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card s-purple">
+          <div class="stat-label">CART Accuracy</div>
+          <div class="stat-value" id="dash-accuracy">—</div>
+          <div class="stat-sub">On test dataset</div>
+          <div class="stat-emoji">🎯</div>
+        </div>
+        <div class="stat-card s-green">
+          <div class="stat-label">F1 Score</div>
+          <div class="stat-value" id="dash-f1">—</div>
+          <div class="stat-sub">CART model</div>
+          <div class="stat-emoji">📈</div>
+        </div>
+        <div class="stat-card s-blue">
+          <div class="stat-label">Total Samples</div>
+          <div class="stat-value" id="dash-samples">—</div>
+          <div class="stat-sub">Train + Test</div>
+          <div class="stat-emoji">🗂️</div>
+        </div>
+        <div class="stat-card s-amber">
+          <div class="stat-label">Model Status</div>
+          <div class="stat-value small" id="dash-status">Not Trained</div>
+          <div class="stat-sub">Train below</div>
+          <div class="stat-emoji">🤖</div>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div style="display:flex; gap:14px; margin-bottom:28px; flex-wrap:wrap;">
+        <button class="btn btn-primary btn-lg" id="btn-train">
+          ⚡ Train Model
+        </button>
+        <button class="btn btn-secondary btn-lg" id="btn-quick-predict">
+          🔮 Make Prediction
+        </button>
+      </div>
+
+      <!-- Algorithm info card -->
+      <div class="card" style="margin-bottom:24px;">
+        <div class="card-header">
+          <div class="card-title">
+            <div class="card-icon icon-purple">🌳</div>
+            About CART – Decision Tree Algorithm
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+          <div>
+            <h4 style="color:var(--accent-light); font-size:13px; margin-bottom:10px; text-transform:uppercase; letter-spacing:0.05em;">CART (Primary Model)</h4>
+            <ul style="list-style:none; font-size:13px; color:var(--text-secondary); line-height:2;">
+              <li>🔹 <strong>Algorithm:</strong> Classification and Regression Trees</li>
+              <li>🔹 <strong>Criterion:</strong> Gini Impurity Index</li>
+              <li>🔹 <strong>Max Depth:</strong> 5 levels</li>
+              <li>🔹 <strong>Interpretable:</strong> Full tree visualization</li>
+              <li>🔹 <strong>Library:</strong> scikit-learn</li>
+            </ul>
+          </div>
+          <div>
+            <h4 style="color:#34d399; font-size:13px; margin-bottom:10px; text-transform:uppercase; letter-spacing:0.05em;">Random Forest (Comparison)</h4>
+            <ul style="list-style:none; font-size:13px; color:var(--text-secondary); line-height:2;">
+              <li>🔸 <strong>Algorithm:</strong> Ensemble of Decision Trees</li>
+              <li>🔸 <strong>Trees:</strong> 100 estimators</li>
+              <li>🔸 <strong>Purpose:</strong> Accuracy comparison</li>
+              <li>🔸 <strong>Feature Importance:</strong> Averaged across trees</li>
+              <li>🔸 <strong>Library:</strong> scikit-learn</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metrics comparison -->
+      <div id="dash-metrics-section" style="display:none;">
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><div class="card-icon icon-purple">🌳</div> CART Performance</div>
+            </div>
+            <div id="cart-bars"></div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><div class="card-icon icon-green">🌲</div> Random Forest Performance</div>
+            </div>
+            <div id="rf-bars"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         PAGE: Predict
+    ═══════════════════════════════════════ -->
+    <section id="page-predict" class="page">
+      <div class="page-header">
+        <h2>New Prediction</h2>
+        <p>Enter candidate details below and get an instant election outcome prediction.</p>
+      </div>
+
+      <div class="grid-2" style="align-items:start;">
+        <!-- Input form -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><div class="card-icon icon-purple">📝</div> Candidate Details</div>
+          </div>
+          <form id="predict-form">
+            <div class="form-group">
+              <label for="f-name">Candidate Name <span class="required">*</span></label>
+              <div class="input-wrap">
+                <input class="form-control" type="text" id="f-name" placeholder="e.g. Alex Johnson" />
+                <span class="input-icon">👤</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="f-department">Department / Branch</label>
+              <select class="form-control" id="f-department">
+                <option value="Engineering">Engineering</option>
+                <option value="Sciences">Sciences</option>
+                <option value="Arts">Arts</option>
+                <option value="Commerce">Commerce</option>
+                <option value="Law">Law</option>
+                <option value="Medicine">Medicine</option>
+                <option value="Business">Business</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="f-spending">Campaign Spending ($)</label>
+              <div class="input-wrap">
+                <input class="form-control" type="number" id="f-spending"
+                  value="5000" min="0" max="100000" step="100" />
+                <span class="input-icon">💰</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Popularity Score: <span id="f-popularity-val">60</span>/100</label>
+              <div class="range-wrap">
+                <input type="range" id="f-popularity" min="0" max="100" value="60" />
+                <div class="range-val" id="f-popularity-val-box">60</div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Social Media Influence: <span id="f-social_media-val">55</span>/100</label>
+              <div class="range-wrap">
+                <input type="range" id="f-social_media" min="0" max="100" value="55" />
+                <div class="range-val" id="f-social_media-val-box">55</div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Previous Election Performance: <span id="f-past_performance-val">50</span>/100</label>
+              <div class="range-wrap">
+                <input type="range" id="f-past_performance" min="0" max="100" value="50" />
+                <div class="range-val" id="f-past_performance-val-box">50</div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Student Engagement Level: <span id="f-engagement-val">65</span>/100</label>
+              <div class="range-wrap">
+                <input type="range" id="f-engagement" min="0" max="100" value="65" />
+                <div class="range-val" id="f-engagement-val-box">65</div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="f-model-type">Prediction Model</label>
+              <select class="form-control" id="f-model-type">
+                <option value="cart">CART – Decision Tree (Primary)</option>
+                <option value="rf">Random Forest (Comparison)</option>
+              </select>
+            </div>
+
+            <div class="divider"></div>
+            <button type="submit" class="btn btn-primary btn-block btn-lg">
+              🔮 Predict Election Outcome
+            </button>
+          </form>
+        </div>
+
+        <!-- Info panel -->
+        <div>
+          <div class="card" style="margin-bottom:20px;">
+            <div class="card-header">
+              <div class="card-title"><div class="card-icon icon-blue">ℹ️</div> Input Guide</div>
+            </div>
+            <ul style="list-style:none; font-size:13px; color:var(--text-secondary); line-height:2.2;">
+              <li>👤 <strong>Candidate Name</strong> — Full name of candidate</li>
+              <li>🏛️ <strong>Department</strong> — Academic branch/faculty</li>
+              <li>💰 <strong>Campaign Spending</strong> — Total budget in USD</li>
+              <li>⭐ <strong>Popularity Score</strong> — Peer-rated (0–100)</li>
+              <li>📱 <strong>Social Media</strong> — Online influence score</li>
+              <li>📜 <strong>Past Performance</strong> — Prior election score</li>
+              <li>🤝 <strong>Engagement</strong> — Campus activity level</li>
+            </ul>
+          </div>
+          <div class="alert alert-info">
+            ℹ️ The model must be trained before making predictions. Go to <strong>Dashboard → Train Model</strong> first.
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><div class="card-icon icon-amber">⚡</div>What Matters Most?</div>
+            </div>
+            <p style="font-size:13px; color:var(--text-secondary); margin-bottom:12px;">
+              Based on training data, these factors drive predictions the most:
+            </p>
+            <div style="font-size:13px; color:var(--text-secondary); line-height:2.2;">
+              <div>🥇 Popularity Score</div>
+              <div>🥈 Social Media Influence</div>
+              <div>🥉 Past Performance</div>
+              <div>4️⃣ Engagement Level</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         PAGE: Results
+    ═══════════════════════════════════════ -->
+    <section id="page-results" class="page">
+      <div class="page-header">
+        <h2>Prediction Results</h2>
+        <p>AI-generated election outcome analysis</p>
+      </div>
+
+      <div id="results-empty" class="empty-state">
+        <div class="empty-icon">🔮</div>
+        <h3>No Prediction Yet</h3>
+        <p>Submit candidate details from the Prediction form to see results here.</p>
+      </div>
+
+      <div id="results-content" style="display:none;">
+        <!-- Hero result -->
+        <div class="result-hero" style="margin-bottom:28px;">
+          <div class="result-verdict won" id="res-verdict">WON</div>
+          <div class="result-name" id="res-candidate">Candidate Name</div>
+          <div class="result-sub" id="res-subtitle">CART predicts this candidate will WIN the election.</div>
+
+          <div class="confidence-ring-wrap">
+            <div class="confidence-ring" id="res-ring"></div>
+          </div>
+
+          <div style="display:flex; gap:16px; justify-content:center; flex-wrap:wrap;">
+            <button class="btn btn-primary" id="btn-download-pdf">📄 Download PDF Report</button>
+            <button class="btn btn-secondary" id="btn-new-predict">🔮 New Prediction</button>
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin-bottom:24px;">
+          <!-- Win probability -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><div class="card-icon icon-purple">📊</div> Win/Loss Probability (CART)</div>
+            </div>
+            <div style="margin-bottom:18px;">
+              <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                <span style="font-size:13px; color:var(--text-secondary);">🏆 Win Probability</span>
+                <span style="font-size:13px; font-weight:700; color:var(--success);" id="res-prob-won">—</span>
+              </div>
+              <div class="progress-bar-wrap">
+                <div class="progress-bar green" id="res-prob-won-bar" style="width:0%"></div>
+              </div>
+            </div>
+            <div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                <span style="font-size:13px; color:var(--text-secondary);">❌ Loss Probability</span>
+                <span style="font-size:13px; font-weight:700; color:var(--danger);" id="res-prob-lost">—</span>
+              </div>
+              <div class="progress-bar-wrap">
+                <div class="progress-bar" id="res-prob-lost-bar" style="width:0%; background:linear-gradient(90deg,#b91c1c,#ef4444);"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RF comparison -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><div class="card-icon icon-green">🌲</div> Random Forest Comparison</div>
+            </div>
+            <div style="text-align:center; padding:10px 0;">
+              <div class="confidence-ring" id="rf-ring" style="display:inline-flex;"></div>
+              <div style="margin-top:14px;">
+                <div style="font-size:22px; font-weight:800;" id="rf-verdict">—</div>
+                <div style="font-size:13px; color:var(--text-muted); margin-top:4px;">
+                  RF Confidence: <strong id="rf-confidence">—</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top factors -->
+        <div class="card" style="margin-bottom:24px;">
+          <div class="card-header">
+            <div class="card-title"><div class="card-icon icon-amber">⚡</div> Key Influencing Factors</div>
+          </div>
+          <ul class="fi-list" id="factors-list"></ul>
+        </div>
+
+        <!-- Input summary -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><div class="card-icon icon-blue">📋</div> Input Summary</div>
+          </div>
+          <div class="factors-grid" id="res-input-summary"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         PAGE: Insights
+    ═══════════════════════════════════════ -->
+    <section id="page-insights" class="page">
+      <div class="page-header">
+        <h2>Model Insights & Visualizations</h2>
+        <p>Decision tree diagram, feature importance, confusion matrix.</p>
+      </div>
+
+      <div id="insights-empty" class="empty-state" style="display:none;">
+        <div class="empty-icon">🧠</div>
+        <h3>Model Not Trained Yet</h3>
+        <p>Go to Dashboard and click <strong>Train Model</strong> to generate visualizations.</p>
+      </div>
+
+      <div id="insights-content">
+        <!-- Metrics comparison table -->
+        <div class="card" style="margin-bottom:24px;">
+          <div class="card-header">
+            <div class="card-title"><div class="card-icon icon-purple">📊</div> Model Evaluation Metrics</div>
+          </div>
+          <table class="metrics-table">
+            <thead>
+              <tr>
+                <th>Metric</th>
+                <th>🌳 CART (Decision Tree)</th>
+                <th>🌲 Random Forest</th>
+              </tr>
+            </thead>
+            <tbody id="metrics-table-body">
+              <tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:24px;">Train the model to see metrics.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="grid-2" style="margin-bottom:24px;">
+          <!-- Confusion matrix -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><div class="card-icon icon-blue">🔲</div> Confusion Matrix</div>
+            </div>
+            <img id="img-confusion" class="viz-img" alt="Confusion Matrix"
+              src="" style="display:block;" onerror="this.style.display='none'" />
+            <div style="font-size:12px; color:var(--text-muted); margin-top:10px; text-align:center;">
+              True Positive / False Positive / False Negative / True Negative
+            </div>
+          </div>
+
+          <!-- Feature importance chart -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><div class="card-icon icon-amber">⭐</div> Feature Importance – CART</div>
+            </div>
+            <img id="img-fi" class="viz-img" alt="Feature Importance"
+              src="" style="display:block;" onerror="this.style.display='none'" />
+          </div>
+        </div>
+
+        <!-- Feature importance ranked list -->
+        <div class="card" style="margin-bottom:24px;">
+          <div class="card-header">
+            <div class="card-title"><div class="card-icon icon-purple">🏆</div> Feature Importance Ranking</div>
+          </div>
+          <ul class="fi-list" id="fi-ranked-list">
+            <li style="text-align:center; padding:20px; color:var(--text-muted);">Train the model to see rankings.</li>
+          </ul>
+        </div>
+
+        <!-- Decision tree diagram -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><div class="card-icon icon-green">🌳</div> Decision Tree Diagram (CART, max depth 5)</div>
+          </div>
+          <div style="overflow-x:auto;">
+            <img id="img-tree" class="viz-img" alt="Decision Tree Diagram"
+              src="" style="max-height:600px; width:100%;"
+              onerror="this.style.display='none'" />
+          </div>
+          <div style="font-size:12px; color:var(--text-muted); margin-top:10px; text-align:center;">
+            Blue = Won class · Purple = Lost class · Values show Gini impurity
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         PAGE: Dataset Manager
+    ═══════════════════════════════════════ -->
+    <section id="page-data" class="page">
+      <div class="page-header">
+        <h2>Dataset Manager</h2>
+        <p>Upload your own CSV dataset or download the sample template.</p>
+      </div>
+
+      <div class="grid-2" style="align-items:start;">
+        <!-- Upload -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><div class="card-icon icon-purple">📤</div> Upload Dataset (CSV)</div>
+          </div>
+          <div class="upload-zone" id="csv-upload-zone">
+            <input type="file" id="csv-upload-input" accept=".csv" />
+            <div class="upload-icon">📂</div>
+            <p><span>Click to browse</span> or drag & drop a CSV file here</p>
+            <p style="font-size:12px; margin-top:8px; color:var(--text-muted);">Max size: 10MB</p>
+          </div>
+          <div id="upload-info" style="margin-top:16px;"></div>
+          <div class="divider"></div>
+          <p style="font-size:13px; color:var(--text-secondary); margin-bottom:12px;">
+            After uploading, go to <strong>Dashboard → Train Model</strong> to retrain on your dataset.
+          </p>
+        </div>
+
+        <!-- Schema + Sample download -->
+        <div>
+          <div class="card" style="margin-bottom:20px;">
+            <div class="card-header">
+              <div class="card-title"><div class="card-icon icon-blue">📋</div> Required CSV Schema</div>
+            </div>
+            <table class="metrics-table">
+              <thead>
+                <tr><th>Column</th><th>Type</th><th>Description</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>candidate_name</td><td><span class="badge badge-info">string</span></td><td>Full name</td></tr>
+                <tr><td>popularity_score</td><td><span class="badge badge-info">float</span></td><td>0–100</td></tr>
+                <tr><td>campaign_spending</td><td><span class="badge badge-info">float</span></td><td>USD amount</td></tr>
+                <tr><td>social_media_score</td><td><span class="badge badge-info">float</span></td><td>0–100</td></tr>
+                <tr><td>department</td><td><span class="badge badge-info">string</span></td><td>Faculty name</td></tr>
+                <tr><td>past_performance</td><td><span class="badge badge-info">float</span></td><td>0–100</td></tr>
+                <tr><td>engagement_level</td><td><span class="badge badge-info">float</span></td><td>0–100</td></tr>
+                <tr><td>election_result</td><td><span class="badge badge-success">0 or 1</span></td><td>Target (1=won)</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><div class="card-icon icon-green">📥</div> Sample Dataset</div>
+            </div>
+            <p style="font-size:13px; color:var(--text-secondary); margin-bottom:16px;">
+              Download a 200-row synthetic dataset that matches the required schema. Use it to test the system or as a template for your own data.
+            </p>
+            <button class="btn btn-success" id="btn-download-sample">
+              ⬇️ Download Sample CSV
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- API Docs info -->
+      <div class="card" style="margin-top:24px;">
+        <div class="card-header">
+          <div class="card-title"><div class="card-icon icon-blue">🔌</div> API Documentation</div>
+        </div>
+        <p style="font-size:13px; color:var(--text-secondary); margin-bottom:14px;">
+          The backend exposes a fully documented REST API via FastAPI's built-in Swagger UI.
+        </p>
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+          <a href="http://127.0.0.1:8000/docs" target="_blank" class="btn btn-primary btn-sm">
+            📖 Open Swagger Docs
+          </a>
+          <a href="http://127.0.0.1:8000/redoc" target="_blank" class="btn btn-secondary btn-sm">
+            📝 ReDoc
+          </a>
+        </div>
+        <div class="divider"></div>
+        <div style="font-size:13px; line-height:2;">
+          <div style="font-family:'JetBrains Mono',monospace; color:var(--text-secondary);">
+            <span style="color:var(--success);">POST</span> /auth/login &nbsp; · &nbsp;
+            <span style="color:var(--success);">POST</span> /train-model &nbsp; · &nbsp;
+            <span style="color:var(--success);">POST</span> /predict<br>
+            <span style="color:var(--info);">GET</span>&nbsp; /model-metrics &nbsp; · &nbsp;
+            <span style="color:var(--success);">POST</span> /upload-dataset &nbsp; · &nbsp;
+            <span style="color:var(--info);">GET</span>&nbsp; /sample-data
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ── JS ──────────────────────────────────────────────── -->
+<script src="./js/app.js"></script>
+<script src="./js/auth.js"></script>
+<script src="./js/dashboard.js"></script>
+<script src="./js/predict.js"></script>
+<script src="./js/insights.js"></script>
+
+<script>
+// ── Wire up range slider display boxes ─────────────────────
+["popularity", "social_media", "past_performance", "engagement"].forEach(id => {
+  const slider = document.getElementById(`f-${id}`);
+  const box    = document.getElementById(`f-${id}-val-box`);
+  const lbl    = document.getElementById(`f-${id}-val`);
+  if (!slider) return;
+  function sync() {
+    if (box) box.textContent = slider.value;
+    if (lbl) lbl.textContent = slider.value;
+  }
+  slider.addEventListener("input", sync);
+  sync();
+});
+
+// ── Show results content only after prediction ─────────────
+const resEmpty   = document.getElementById("results-empty");
+const resCont    = document.getElementById("results-content");
+
+const origRender = window.renderResults;
+window.renderResults = function(data, input) {
+  origRender(data, input);
+  resEmpty.style.display  = "none";
+  resCont.style.display   = "block";
+};
+
+// ── RF ring init ───────────────────────────────────────────
+renderConfidenceRing("rf-ring", 0, false);
+</script>
+
+</body>
+</html>
